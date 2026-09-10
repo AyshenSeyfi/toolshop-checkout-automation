@@ -5,6 +5,14 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  // The shared public demo has real, confirmed latency spikes - checking it
+  // live during this suite's development caught a `GET /products` response
+  // (and, separately, a plain page navigation) take 8-30+ real seconds, then
+  // recover to sub-second moments later. The default 30s per-test timeout
+  // isn't enough headroom for that; 60s gives a genuinely slow-but-working
+  // request room to finish without hiding an actually broken test (which
+  // would still time out well before then, or fail on its own assertions).
+  timeout: 60_000,
   // Retries mask nothing here: a real failure still fails, retries just
   // absorb one-off infra/network hiccups against a shared public demo site
   // in CI. Locally you want to see a failure the first time.

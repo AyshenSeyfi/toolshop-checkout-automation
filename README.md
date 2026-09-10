@@ -178,6 +178,19 @@ A few things that shaped the implementation:
   `#order-confirmation` itself - the element actually proven visible and
   stable - and pulls the invoice number out of its text with a regex
   instead of depending on the inner span.
+- **The shared public demo has real, confirmed latency spikes.** While
+  developing this suite, I checked the live API directly (a plain `fetch`
+  against the same `GET /products` call the catalog page makes) and caught
+  it taking over 8 seconds, then recovering to ~100ms a minute later; a
+  separate run saw a plain page navigation (`page.goto('/checkout')`, no
+  app logic involved at all) exceed Playwright's default 30s test timeout.
+  This isn't something test code can wait out - no client-side retry fixes
+  a server that's genuinely slow for a few seconds. `playwright.config.ts`
+  sets a 60s per-test timeout to give real-but-slow runs enough room without
+  masking an actually broken test, which would still fail well before that
+  on its own logic. This is the other stability risk worth calling out
+  alongside the address one below: testing against a shared public demo
+  means occasional latency spikes are expected, not a sign of a flaky test.
 - **Access tokens are short-lived.** The assignment brief documents
   `expires_in: 120`, but a live login against the real API returned
   `expires_in: 300` — the suite uses the empirically observed value
