@@ -103,12 +103,19 @@ A few things that shaped the implementation:
   scoped to the authenticated user server-side, which is what makes the
   API-level verification step safe under parallel execution.
 - **The product catalog can take longer than 5s to load against the shared
-  public demo.** A live run failed opening the first in-stock product with
-  the page fully rendered (nav, sort, price filter) but the product cards
-  still showing as loading skeletons - the default 5s wait just wasn't
-  enough that time. `ProductsPage.open()` now waits on the real
-  `GET /products` response before returning, and the card-visibility check
-  has a longer, explicit timeout to absorb the render step after that.
+  public demo - and waiting on the network response behind it isn't
+  actually more reliable than just waiting on the DOM.** A live run failed
+  opening the first in-stock product with the page fully rendered (nav,
+  sort, price filter) but the product cards still showing as loading
+  skeletons - the default 5s visibility wait wasn't enough that time. I
+  first fixed this by also waiting on the real `GET /products` response
+  before checking visibility, but a later run proved that wait itself
+  unreliable: its failure video showed the catalog fully loaded with real
+  product images by the time Playwright gave up waiting on that network
+  promise, which never resolved anyway. `openFirstInStockProduct()` now
+  waits only on the card actually being visible, with a generous 45s
+  timeout - simpler, and, as it turned out, more trustworthy than
+  synchronizing on the network call behind it.
 - **Filling the billing address can get raced and silently, partially
   cleared by the app itself.** Two consecutive live runs against the real
   app caught the same class of failure with different fields affected each
